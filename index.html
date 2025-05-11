@@ -19,35 +19,38 @@
     };
     firebase.initializeApp(firebaseConfig);
 
+    let userId = localStorage.getItem("caffeboUserId");
+    if (!userId) {
+      userId = "user_" + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem("caffeboUserId", userId);
+    }
+
     function checkPoints() {
-      const phone = document.getElementById("phone").value;
       const result = document.getElementById("result");
-      firebase.database().ref('users/' + phone).once('value')
+      firebase.database().ref('users/' + userId).once('value')
         .then((snapshot) => {
           if (snapshot.exists()) {
             const point = snapshot.val().points;
             const freeCoffees = Math.floor(point / 15);
             const remaining = point % 15;
-            result.innerHTML = `Puanınız: ${point} <br> Ücretsiz kahve hakkı: ${freeCoffees} <br> Sonraki hediye için kalan puan: ${15 - remaining}`;
+            result.innerHTML = `Kullanıcı Kodu: ${userId}<br>Puanınız: ${point}<br>Ücretsiz kahve hakkı: ${freeCoffees}<br>Sonraki hediye için kalan puan: ${15 - remaining}`;
           } else {
-            result.innerHTML = "Bu numara için kayıtlı puan bulunamadı.";
+            result.innerHTML = `Kullanıcı Kodu: ${userId}<br>Henüz puanınız bulunmamaktadır.`;
           }
         })
-        .catch((error) => {
+        .catch(() => {
           result.innerHTML = "Veri alınırken hata oluştu.";
         });
     }
 
     function addPoints() {
-      const phone = document.getElementById("adminPhone").value;
       const added = parseFloat(document.getElementById("adminPoints").value);
       const result = document.getElementById("adminResult");
-      if (!phone || isNaN(added)) {
-        result.innerHTML = "Lütfen geçerli telefon ve puan girin.";
+      if (isNaN(added)) {
+        result.innerHTML = "Lütfen geçerli puan girin.";
         return;
       }
-
-      const userRef = firebase.database().ref('users/' + phone);
+      const userRef = firebase.database().ref('users/' + userId);
       userRef.once('value')
         .then((snapshot) => {
           let current = 0;
@@ -60,7 +63,7 @@
         .then((updated) => {
           result.innerHTML = `Yeni puan: ${updated}`;
         })
-        .catch((error) => {
+        .catch(() => {
           result.innerHTML = "Puan eklenirken hata oluştu.";
         });
     }
@@ -81,7 +84,7 @@
       margin: 2rem auto;
       text-align: center;
     }
-    input, button, select {
+    input, button {
       padding: 0.8rem;
       font-size: 1rem;
       width: 100%;
@@ -107,18 +110,16 @@
 </head>
 <body>
   <img src="caffebo.jpg" alt="CaffeBo Logo" class="logo" />
+
   <div class="card">
-    <h2>CaffeBo Sadakat Puanı Sorgula</h2>
-    <p>Telefon numaranızı girin, puan durumunuzu öğrenin:</p>
-    <input type="tel" id="phone" placeholder="05xx xxx xx xx" />
+    <h2>CaffeBo Sadakat Puanı</h2>
     <button onclick="checkPoints()">Puanları Göster</button>
     <div id="result"></div>
   </div>
 
   <div class="admin">
     <h3>Admin Paneli</h3>
-    <p>Puan eklemek için telefon ve miktar girin:</p>
-    <input type="tel" id="adminPhone" placeholder="05xx xxx xx xx" />
+    <p>Bu cihazdaki kullanıcıya puan ekleyin:</p>
     <input type="number" id="adminPoints" placeholder="Eklenecek puan miktarı" />
     <button onclick="addPoints()">Puan Ekle</button>
     <div id="adminResult"></div>
