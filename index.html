@@ -46,18 +46,19 @@
         result.innerHTML = "Lütfen geçerli telefon ve puan girin.";
         return;
       }
+
       const userRef = firebase.database().ref('users/' + phone);
-      let currentPoints = 0;
       userRef.once('value')
         .then((snapshot) => {
+          let current = 0;
           if (snapshot.exists()) {
-            currentPoints = snapshot.val().points;
+            current = snapshot.val().points;
           }
-          const newTotal = currentPoints + added;
-          return userRef.set({ points: newTotal }).then(() => newTotal);
+          const updated = current + added;
+          return userRef.set({ points: updated }).then(() => updated);
         })
-        .then((newTotal) => {
-          result.innerHTML = `Yeni puan: ${newTotal}`;
+        .then((updated) => {
+          result.innerHTML = `Yeni puan: ${updated}`;
         })
         .catch((error) => {
           result.innerHTML = "Puan eklenirken hata oluştu.";
