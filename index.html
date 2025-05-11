@@ -7,6 +7,7 @@
   <title>CaffeBo Sadakat Programı</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBUOhtEzwslJqH6Fh_hWQH_JPGNQ2D_Blk",
@@ -19,10 +20,19 @@
     };
     firebase.initializeApp(firebaseConfig);
 
-    let userId = localStorage.getItem("caffeboUserId");
+    const urlParams = new URLSearchParams(window.location.search);
+    let userId = urlParams.get("id") || localStorage.getItem("caffeboUserId");
     if (!userId) {
       userId = "user_" + Math.random().toString(36).substring(2, 10);
       localStorage.setItem("caffeboUserId", userId);
+    }
+
+    function renderQRCode() {
+      const qrDiv = document.getElementById("qrcode");
+      qrDiv.innerHTML = "";
+      QRCode.toCanvas(qrDiv, window.location.origin + window.location.pathname + "?id=" + userId, function (error) {
+        if (error) console.error(error);
+      });
     }
 
     function checkPoints() {
@@ -33,9 +43,9 @@
             const point = snapshot.val().points;
             const freeCoffees = Math.floor(point / 15);
             const remaining = point % 15;
-            result.innerHTML = `Kullanıcı Kodu: ${userId}<br>Puanınız: ${point}<br>Ücretsiz kahve hakkı: ${freeCoffees}<br>Sonraki hediye için kalan puan: ${15 - remaining}`;
+            result.innerHTML = `Kullanıcı Kodunuz: <strong>${userId}</strong><br><br>Puanınız: ${point}<br>Ücretsiz kahve hakkı: ${freeCoffees}<br>Sonraki hediye için kalan puan: ${15 - remaining}`;
           } else {
-            result.innerHTML = `Kullanıcı Kodu: ${userId}<br>Henüz puanınız bulunmamaktadır.`;
+            result.innerHTML = `Kullanıcı Kodunuz: <strong>${userId}</strong><br><br>Henüz puanınız bulunmamaktadır.`;
           }
         })
         .catch(() => {
@@ -45,12 +55,14 @@
 
     function addPoints() {
       const added = parseFloat(document.getElementById("adminPoints").value);
+      const manualId = document.getElementById("manualId").value;
       const result = document.getElementById("adminResult");
+      const targetId = manualId || userId;
       if (isNaN(added)) {
         result.innerHTML = "Lütfen geçerli puan girin.";
         return;
       }
-      const userRef = firebase.database().ref('users/' + userId);
+      const userRef = firebase.database().ref('users/' + targetId);
       userRef.once('value')
         .then((snapshot) => {
           let current = 0;
@@ -61,11 +73,15 @@
           return userRef.set({ points: updated }).then(() => updated);
         })
         .then((updated) => {
-          result.innerHTML = `Yeni puan: ${updated}`;
+          result.innerHTML = `Yeni puan (${targetId}): ${updated}`;
         })
         .catch(() => {
           result.innerHTML = "Puan eklenirken hata oluştu.";
         });
+    }
+
+    window.onload = () => {
+      renderQRCode();
     }
   </script>
   <style>
@@ -106,20 +122,25 @@
       margin: 0 auto 1.5rem;
       max-width: 200px;
     }
+    #qrcode canvas {
+      margin: 1rem auto;
+      display: block;
+    }
   </style>
 </head>
 <body>
   <img src="caffebo.jpg" alt="CaffeBo Logo" class="logo" />
-
   <div class="card">
     <h2>CaffeBo Sadakat Puanı</h2>
+    <p><strong>Kodunuz:</strong> <span id="codeDisplay">${userId}</span></p>
+    <div id="qrcode"></div>
     <button onclick="checkPoints()">Puanları Göster</button>
     <div id="result"></div>
   </div>
-
   <div class="admin">
     <h3>Admin Paneli</h3>
-    <p>Bu cihazdaki kullanıcıya puan ekleyin:</p>
+    <p>İsteğe bağlı kullanıcı ID girin (örneğin QR'dan gelen):</p>
+    <input type="text" id="manualId" placeholder="user_xxxxxxxx (opsiyonel)" />
     <input type="number" id="adminPoints" placeholder="Eklenecek puan miktarı" />
     <button onclick="addPoints()">Puan Ekle</button>
     <div id="adminResult"></div>
