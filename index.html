@@ -82,7 +82,18 @@
         });
     }
 
+    function showAdmin() {
+      const pwd = document.getElementById("adminPassword").value;
+      if (pwd === "caffebo123") {
+        document.querySelector(".admin").style.display = "block";
+        document.querySelector(".admin-login").style.display = "none";
+      } else {
+        alert("Yanlış şifre!");
+      }
+    }
+
     window.onload = () => {
+      document.querySelector('.admin').style.display = 'none';
       document.getElementById("codeDisplay").innerText = userId;
       renderQRCode();
     }
@@ -149,7 +160,12 @@
     <div id="result"></div>
   </div>
 
-  <div class="admin">
+  <div class="admin-login">
+    <input type="password" id="adminPassword" placeholder="Şifreyi girin" />
+    <button onclick="showAdmin()">Giriş</button>
+  </div>
+
+  <div class="admin" style="display: none;">
     <h3>Admin Paneli</h3>
     <input type="number" id="adminPoints" placeholder="Eklenecek puan miktarı" />
     <button onclick="addPoints()">Puan Ekle</button>
